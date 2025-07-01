@@ -1,0 +1,117 @@
+<?php
+$host = "localhost";
+$user = "root";
+$pass = "";
+$dbname = "hospital";
+
+$conn = new mysqli($host, $user, $pass, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+?>
+<!DOCTYPE html>
+<html>
+<head><title>Hospital Management</title></head>
+<body>
+    <h1>Hospital Management System</h1>
+    <ul>
+        <li><a href="register_patient.php">Register Patient</a></li>
+        <li><a href="add_doctor.php">Add Doctor</a></li>
+        <li><a href="book_appointment.php">Book Appointment</a></li>
+        <li><a href="view_appointments.php">View Appointments</a></li>
+    </ul>
+</body>
+</html>
+  <?php include 'config.php'; ?>
+<form method="post">
+    Name: <input type="text" name="name"><br>
+    Age: <input type="number" name="age"><br>
+    <input type="submit" name="register" value="Register">
+</form>
+
+<?php
+if (isset($_POST['register'])) {
+    $name = $_POST['name'];
+    $age = $_POST['age'];
+    $conn->query("INSERT INTO patients (name, age) VALUES ('$name', '$age')");
+    echo "Patient registered!";
+}
+?>
+      <?php include 'config.php'; ?>
+<form method="post">
+    Name: <input type="text" name="name"><br>
+    Specialization: <input type="text" name="specialization"><br>
+    <input type="submit" name="add" value="Add Doctor">
+</form>
+
+<?php
+if (isset($_POST['add'])) {
+    $name = $_POST['name'];
+    $specialization = $_POST['specialization'];
+    $conn->query("INSERT INTO doctors (name, specialization) VALUES ('$name', '$specialization')");
+    echo "Doctor added!";
+}
+?>
+      <?php
+include 'config.php';
+$patients = $conn->query("SELECT * FROM patients");
+$doctors = $conn->query("SELECT * FROM doctors");
+?>
+
+<form method="post">
+    Patient:
+    <select name="patient_id">
+        <?php while($p = $patients->fetch_assoc()) echo "<option value='{$p['id']}'>{$p['name']}</option>"; ?>
+    </select><br>
+    Doctor:
+    <select name="doctor_id">
+        <?php while($d = $doctors->fetch_assoc()) echo "<option value='{$d['id']}'>{$d['name']}</option>"; ?>
+    </select><br>
+    Date: <input type="date" name="date"><br>
+    <input type="submit" name="book" value="Book Appointment">
+</form>
+
+<?php
+if (isset($_POST['book'])) {
+    $conn->query("INSERT INTO appointments (patient_id, doctor_id, date) VALUES ('{$_POST['patient_id']}', '{$_POST['doctor_id']}', '{$_POST['date']}')");
+    echo "Appointment booked!";
+}
+?>
+      <?php
+include 'config.php';
+$result = $conn->query("SELECT a.id, p.name AS patient, d.name AS doctor, a.date 
+                        FROM appointments a 
+                        JOIN patients p ON a.patient_id = p.id 
+                        JOIN doctors d ON a.doctor_id = d.id");
+?>
+<h2>Appointments</h2>
+<table border="1">
+    <tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Date</th></tr>
+    <?php while($row = $result->fetch_assoc()) {
+        echo "<tr><td>{$row['id']}</td><td>{$row['patient']}</td><td>{$row['doctor']}</td><td>{$row['date']}</td></tr>";
+    } ?>
+</table>
+          CREATE DATABASE IF NOT EXISTS hospital;
+USE hospital;
+
+CREATE TABLE patients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    age INT
+);
+
+CREATE TABLE doctors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    specialization VARCHAR(100)
+);
+
+CREATE TABLE appointments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    doctor_id INT,
+    date DATE,
+    FOREIGN KEY (patient_id) REFERENCES patients(id),
+    FOREIGN KEY (doctor_id) REFERENCES doctors(id)
+);
