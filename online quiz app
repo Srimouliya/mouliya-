@@ -1,0 +1,117 @@
+CREATE TABLE questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT,
+    a TEXT,
+    b TEXT,
+    c TEXT,
+    d TEXT,
+    answer TEXT
+);
+body {
+  font-family: Arial, sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+body.light-mode {
+  background: #f5f5f5;
+  color: #333;
+}
+body.dark-mode {
+  background: #333;
+  color: #f5f5f5;
+}
+/* Button styles */
+.mode-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+// Dark / Light mode toggle
+const modeToggle = document.createElement('button');
+modeToggle.textContent = 'Toggle Dark/Light Mode';
+modeToggle.classList.add('mode-toggle');
+document.body.appendChild(modeToggle);
+
+const currentMode = localStorage.getItem('mode') || 'light';
+document.body.classList.add(${currentMode}-mode);
+
+modeToggle.onclick = () => {
+  const newMode = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+  document.body.classList.toggle('light-mode');
+  document.body.classList.toggle('dark-mode');
+  localStorage.setItem('mode', newMode);
+};
+
+
+function startTimer(duration, display, onExpire) {
+  let timer = duration, minutes, seconds;
+  const interval = setInterval(() => {
+    minutes = Math.floor(timer / 60);
+    seconds = timer % 60;
+    display.textContent = ${minutes}:${seconds < 10 ? '0' : ''}${seconds};
+    if (--timer < 0) {
+      clearInterval(interval);
+      onExpire();
+    }
+  }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const timerDisplay = document.getElementById('timer');
+  if (timerDisplay) {
+    startTimer(60 * 5, timerDisplay, () => document.getElementById('quiz-form').submit());
+  }
+});
+<!DOCTYPE html>
+<html>
+<head><title>Quiz</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+  <h2>Question {{ current+1 }} of {{ total }}</h2>
+  <div>Time Left: <span id="timer">05:00</span></div>
+  <form method="post" id="quiz-form">
+    <p>{{ question['question'] }}</p>
+    {% for option in ['a','b','c','d'] %}
+      <label><input type="radio" name="option" value="{{ question[option] }}" required> {{ question[option] }}</label><br>
+    {% endfor %}
+    <button type="submit">Next</button>
+  </form>
+  <script src="/static/script.js"></script>
+</body>
+</html>
+CREATE TABLE leaderboard (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL,
+  score INTEGER,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+# at the top
+from datetime import datetime
+
+# in /result route:
+@app.route('/result', methods=['GET', 'POST'])
+def result():
+    username = session.get('username', 'Anonymous')
+    score = session['score']
+    total = len(session['questions'])
+
+    conn = get_db_connection()
+    conn.execute('INSERT INTO leaderboard (username, score, timestamp) VALUES (?, ?, ?)',
+                 (username, score, datetime.now()))
+    conn.commit()
+    top = conn.execute('SELECT username, score, timestamp FROM leaderboard ORDER BY score DESC, timestamp ASC LIMIT 10').fetchall()
+    conn.close()
+    return render_template('result.html', score=score, total=total, answers=session['answers'], questions=session['questions'], top=top)
+<form method="post" action="/start_quiz">
+  <label>Enter Your Name: <input type="text" name="username" required></label>
+  <button type="submit">Start Quiz</button>
+</form>
+@app.route('/start_quiz', methods=['POST'])
+def start_quiz():
+    session['username'] = request.form['username']
+    # ... the rest stays the same ...
+<h3>Top Scores</h3>
+<ol>
+  {% for row in top %}
+    <li>{{ row['username'] }} – {{ row['score'] }}/{{ total }} on {{ row['timestamp'] }}</li>
+  {% endfor %}
+</ol>
